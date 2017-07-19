@@ -9,7 +9,7 @@ import matplotlib
 from matplotlib.widgets import RectangleSelector, Button
 from matplotlib import pyplot as plt
 
-from skimage import (io, util, exposure)
+from skimage import (io, util, exposure, transform, equalize, morphology, segmentation)
 
 
 class PersistentRectangleSelector(RectangleSelector):
@@ -57,3 +57,17 @@ def equalize_from_ROI(img, roi):
     mask = np.zeros(img.shape)
     mask[ymin:ymax, xmin:xmax] = 1
     return exposure.equalize_hist(img, mask = mask)
+
+
+
+def rescale(img, value):
+    return transform.rescale(img, value,
+                             mode="constant",
+                             preserve_range=True).astype(img.dtype)
+
+
+invert = util.invert
+
+equalize_adaptive = equalize.equalize_adapthist
+
+equalize_hist = equalize.equalize_hist
