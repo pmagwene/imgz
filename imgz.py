@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-from toolz import *
-
 import numpy as np
 import scipy as sp
 
@@ -9,7 +7,10 @@ import matplotlib
 from matplotlib.widgets import RectangleSelector, Button
 from matplotlib import pyplot as plt
 
-from skimage import (io, util, exposure, transform, equalize, morphology, segmentation)
+from skimage import (morphology, segmentation, exposure, feature, filters,
+                     measure, transform, util, io)
+
+from toolz.curried import *
 
 
 class PersistentRectangleSelector(RectangleSelector):
@@ -60,14 +61,50 @@ def equalize_from_ROI(img, roi):
 
 
 
-def rescale(img, value):
-    return transform.rescale(img, value,
-                             mode="constant",
-                             preserve_range=True).astype(img.dtype)
 
-
+read_image = io.imread
 invert = util.invert
+equalize_adaptive = exposure.equalize_adapthist
+equalize_hist = exposure.equalize_hist
+clear_border = segmentation.clear_border
+disk_selem = morphology.disk
+binary_opening = morphology.binary_opening
+binary_erosion = morphology.binary_erosion
 
-equalize_adaptive = equalize.equalize_adapthist
+@curry
+def rescale(scale, img):
+    return transform.rescale(img, scale,
+                             mode = "constant",
+                             preserve_range = True).astype(img.dtype)
 
-equalize_hist = equalize.equalize_hist
+def threshold_otsu(img):
+    return img > filters.threshold_otsu(img)
+
+def threshold_li(img):
+    return img > filters.threshold_li(img)
+
+def threshold_isodata(img):
+    return img > filters.threshold_isodata(img)
+
+@curry
+def threshold_gaussian(block_size, sigma, img):
+    return img > filters.threshold_local(img, block_size,
+                                         method = "gaussian",
+                                         param = sigma)
+
+@curry
+def remove_small_objects(min_size, img, **args):
+    return morphology.remove_small_objects(img, min_size, **args)
+
+@curry
+def remove_small_holes(min_size, img, **args):
+    return morphology.remove_small_holes(img, min_size, **args)
+
+@curry
+def disk_opening(radius, img):
+    return morphology.binary_opening(img, selem = morphology.disk(radius))
+
+@curry
+def disk_erosion(radius, img):
+    return morphology.binary_erosion(img, selem = morphology.disk(radius))
+
